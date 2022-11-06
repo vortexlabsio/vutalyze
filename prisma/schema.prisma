@@ -1,0 +1,306 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id       String  @id @default(cuid())
+  email    String  @unique
+  username String  @unique
+  name     String?
+  imageUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  password       Password?
+  contactInfo    ContactInfo?
+  admin          Admin?
+  chats          Chat[]
+  messages       Message[]
+  Organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+  Audit          Audit[]
+  Dimension      Dimension[]
+  Workspace      Workspace?    @relation(fields: [workspaceId], references: [id])
+  workspaceId    String?
+  Project        Project?      @relation(fields: [projectId], references: [id])
+  projectId      String?
+  Task           Task?         @relation(fields: [taskId], references: [id])
+  taskId         String?
+}
+
+model Organization {
+  id         String  @id @default(cuid())
+  name       String
+  imageUrl   String?
+  url        String
+  ownerEmail String
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  restrictLoginMethod   String?
+  restrictAuthSubPrefix String?
+
+  admins                  Admin[]
+  users                   User[]
+  chats                   Chat[]
+  messages                Message[]
+  invites                 Invite[]
+  stripeCustomerId        String
+  discountCode            String
+  priceId                 String
+  freeSeats               Int
+  disableSelfServeBilling Boolean
+  enterprise              Boolean
+  subscription            Subscription    @relation(fields: [subscriptionId], references: [id])
+  connections             OrgConnection[]
+  settings                Setting[]
+  subscriptionId          String          @unique
+  APIKey                  APIKey[]
+  Audit                   Audit[]
+  Datasource              Datasource[]
+  Dimension               Dimension[]
+  Workspace               Workspace[]
+}
+
+model Subscription {
+  id                 String       @id @default(cuid())
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  status             String
+  cancelAt           DateTime?
+  cancelAtPeriodEnd  Boolean
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  canceledAt         DateTime?
+  endedAt            DateTime?
+  trialStart         DateTime?
+  trialEnd           DateTime?
+  plan               Plan         @relation(fields: [planId], references: [id])
+  organization       Organization? 
+  planId             String
+}
+
+model Plan {
+  id            String         @id @default(cuid())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  name          String
+  price         Int
+  seats         Int
+  interval      String
+  trialDays     Int
+  stripeId      String
+  subscriptions Subscription[]
+}
+
+model OrgConnection {
+  id             String       @id @default(cuid())
+  name           String
+  type           String
+  settings       Setting[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+}
+
+model Invite {
+  id             String       @id @default(cuid())
+  email          String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+}
+
+model Setting {
+  id              String         @id @default(cuid())
+  name            String
+  value           String
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  settingId       String
+  organizationId  String
+  Datasource      Datasource?    @relation(fields: [datasourceId], references: [id])
+  datasourceId    String?
+  OrgConnection   OrgConnection? @relation(fields: [orgConnectionId], references: [id])
+  orgConnectionId String?
+}
+
+model APIKey {
+  id             String       @id @default(cuid())
+  key            String       @unique
+  name           String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organizationId String
+}
+
+model Audit {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  event          String
+  entity         String
+  parentEntity   String
+  user           User         @relation(fields: [userId], references: [id])
+  details        String
+  organizationId String
+  userId         String
+}
+
+model Datasource {
+  id             String       @id @default(cuid())
+  name           String
+  type           String
+  params         String
+  settings       Setting[]
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organizationId String
+  Dimension      Dimension[]
+  Widget         Widget[]
+}
+
+model Dimension {
+  id             String       @id @default(cuid())
+  name           String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  owner          User         @relation(fields: [userId], references: [id])
+  sql            String
+  datasource     Datasource   @relation(fields: [datasourceId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organizationId String
+  userId         String
+  datasourceId   String
+}
+
+model Password {
+  hash String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @unique
+}
+
+model ContactInfo {
+  id      String  @id @default(cuid())
+  email   String?
+  phone   String?
+  address String?
+  city    String?
+  state   String?
+  zip     String?
+  country String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @unique
+}
+
+model Admin {
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @unique
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  Organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+}
+
+model Chat {
+  id String @id @default(cuid())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users          User[]
+  messages       Message[]
+  Organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatId String
+
+  sender         User          @relation(fields: [senderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  senderId       String
+  Organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+}
+
+model Workspace {
+  id             String       @id @default(cuid())
+  name           String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  users          User[]
+  dashboards     Dashboard[]
+  organizationId String
+  Project        Project[]
+}
+
+model Dashboard {
+  id          String     @id @default(cuid())
+  name        String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  project     Project    @relation(fields: [projectId], references: [id])
+  widgets     Widget[]
+  Workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+  workspaceId String?
+  projectId   String
+}
+
+model Widget {
+  id           String     @id @default(cuid())
+  name         String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  dashboard    Dashboard  @relation(fields: [dashboardId], references: [id])
+  datasource   Datasource @relation(fields: [datasourceId], references: [id])
+  sql          String
+  chartType    String
+  chartOptions String
+  dashboardId  String
+  datasourceId String
+}
+
+model Project {
+  id          String      @id @default(cuid())
+  name        String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id])
+  users       User[]
+  tasks       Task[]
+  Dashboard   Dashboard[]
+  workspaceId String
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id])
+  users     User[]
+  projectId String
+}

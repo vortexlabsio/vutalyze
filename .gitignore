@@ -1,0 +1,14 @@
+node_modules
+
+/build
+/public/build
+.env
+
+/prisma/data.db
+/prisma/data.db-journal
+
+/app/styles/tailwind.css
+*.local.*
+/test-results/
+/playwright-report/
+/playwright/.cache/
